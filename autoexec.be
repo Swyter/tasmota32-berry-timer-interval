@@ -23,8 +23,10 @@ def tasmota_set_power(relay_index, state)
     end
 end
 
-def check_timer_interval_between(relay_index, timer_start, timer_end)
-    # swy: ignore inactive timers
+# swy: keep in mind that for all the legacy tasmota commands everything starts at index one, where as for
+#       the berry stuff the first index is always zero, so we need to convert between them; good job!
+def check_timer_interval_between(relay_timer_number_first_is_one, timer_start, timer_end)
+    # swy: ignore inactive timers; as well as all a whole hosts of fail-safe sanity checks before doing anything
     if (timer_start['Enable'] != 1 ||
         timer_end  ['Enable'] != 1)
         tasmota_log("swy: some of the timers in the interval seem to be disabled; bailing out")
@@ -33,6 +35,11 @@ def check_timer_interval_between(relay_index, timer_start, timer_end)
 
     if (timer_start['Output'] != timer_end['Output'])
         tasmota_log("swy: the timer pair must control the same relay; bailing out")
+        return
+    end
+
+    if (timer_start['Output'] != relay_timer_number_first_is_one)
+        tasmota_log(string.format("swy: the relay the timer pair controls (%u) must match the one provided as parameter (%u); bailing out", timer_start['Output'], relay_timer_number_first_is_one))
         return
     end
 
@@ -51,7 +58,7 @@ def check_timer_interval_between(relay_index, timer_start, timer_end)
     # swy: make sure that the first timer is set to On (1) and the second to Off (0),
     #      instead of stuff we don't understand here, like Toggle (2) or Rule (3).
     if (timer_start['Action'] != 1 || timer_end['Action'] != 0)
-        tasmota_log("swy: the timer pair must control the same relay; bailing out")
+        tasmota_log("swy: make sure that the first timer is set to ON and the second to OFF; bailing out")
         return
     end
 
@@ -69,6 +76,11 @@ def check_timer_interval_between(relay_index, timer_start, timer_end)
           timer_end['Days'][cur_time['weekday'] % 6] == '1')
           tasmota_log(string.format("swy: current week day (%u) is an active day", cur_time['weekday']))
 
+        if (((ht_start['hour'] * 60) + ht_start['min']) >= ((ht_end  ['hour'] * 60) + ht_end  ['min']))
+            tasmota_log("swy: the start timer must trigger earlier than the end timer; bailing out")
+            return
+        end
+
         if (((cur_time['hour'] * 60) + cur_time['min']) >= # swy: convert to minutes for an easier comparison
             ((ht_start['hour'] * 60) + ht_start['min']))
     
@@ -83,7 +95,7 @@ def check_timer_interval_between(relay_index, timer_start, timer_end)
                     )
                 )
                 # swy: we're inside the working interval; it should be on
-                tasmota_set_power(relay_index, true)
+                tasmota_set_power((relay_timer_number_first_is_one - 1), true)
                 return
             end
         end
@@ -96,11 +108,11 @@ def check_timer_interval_between(relay_index, timer_start, timer_end)
             )
         )
     else
-        tasmota_log(string.format("swy: current week day (%u) doesn't seem to be an active day", cur_time['weekday']))
+        tasmota_log(string.format("swy: current week day (%u) doesn't seem to be an active day; trying to shut down", cur_time['weekday']))
     end
 
     # swy: outside the valid interval; shut it down
-    tasmota_set_power(relay_index, false)
+    tasmota_set_power((relay_timer_number_first_is_one - 1), false)
 end
 
 check_timer_interval_between(2, t1, t2);
