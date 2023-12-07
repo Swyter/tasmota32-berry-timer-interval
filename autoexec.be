@@ -1,3 +1,9 @@
+# created by swyter in december 2023
+# --
+# A tiny start-up Berry script for Tasmota32 that tries to convert a pair of two one-shot web UI timers
+# into a single interval/activation range. Useful for safely turning off a relay/output when power
+# comes back after a brownout and one of the triggers did not fire. 
+
 t1 = tasmota.cmd('timer1')['Timer1']
 t2 = tasmota.cmd('timer2')['Timer2']
 
@@ -17,6 +23,8 @@ def tasmota_set_power(relay_index, state)
     var state_string = state ? 'ON' : 'OFF'
     if (tasmota.get_power(relay_index) != state)
         tasmota_log(string.format("swy: [!!] powering %s (%u) relay index %u", state_string, state, relay_index))
+        # swy: NOTE: this is what actually turns the physical outputs on (true)
+        #            or off (false), comment out for stubbing/testing
         #tasmota.set_power(relay_index, state)
     else
         tasmota_log(string.format("swy: [!!] relay index %u is already %s (%u); nothing to do", relay_index, state_string, state))
