@@ -17,14 +17,45 @@ def tasmota_set_power(relay_index, state)
     var state_string = state ? 'ON' : 'OFF'
     if (tasmota.get_power(relay_index) != state)
         tasmota_log(string.format("swy: [!!] powering %s (%u) relay index %u", state_string, state, relay_index))
-        #tasmota.set_power(relay_index, !!0)
+        #tasmota.set_power(relay_index, state)
     else
-        tasmota_log(string.format("swy: [!!] relay index %u is already %s (%u)", relay_index, state_string, state))
+        tasmota_log(string.format("swy: [!!] relay index %u is already %s (%u); nothing to do", relay_index, state_string, state))
     end
 end
 
 def check_timer_interval_between(relay_index, timer_start, timer_end)
-    tasmota.log("asdf")
+    # swy: ignore inactive timers
+    if (timer_start['Enable'] != 1 ||
+        timer_end  ['Enable'] != 1)
+        tasmota_log("swy: some of the timers in the interval seem to be disabled; bailing out")
+        return
+    end
+
+    if (timer_start['Output'] != timer_end['Output'])
+        tasmota_log("swy: the timer pair must control the same relay; bailing out")
+        return
+    end
+
+    # swy: make sure the mode is set to 'Time' (0), instead of Sunrise (1) or Sunset (2)
+    if (timer_start['Mode'  ] != 0 || timer_end['Mode'  ] != 0)
+        tasmota_log("swy: the timer pair must not be in sunrise/sunset mode; bailing out")
+        return
+    end
+
+    # swy: make sure there's no trigger-time randomization; which we can't handle right now
+    if (timer_start['Window'] != 0 || timer_end['Window'] != 0)
+        tasmota_log("swy: the timer pair must set the randomized trigger offset to +/- 0")
+        return
+    end
+
+    # swy: make sure that the first timer is set to On (1) and the second to Off (0),
+    #      instead of stuff we don't understand here, like Toggle (2) or Rule (3).
+    if (timer_start['Action'] != 1 || timer_end['Action'] != 0)
+        tasmota_log("swy: the timer pair must control the same relay; bailing out")
+        return
+    end
+
+    # swy: convert the provided e.g. '07:00' string into two 7 and 0 numbers:
     var timer_start_num = string.split(timer_start['Time'], ":")
     var timer_end_num   = string.split(timer_end  ['Time'], ":")
 
@@ -72,5 +103,5 @@ def check_timer_interval_between(relay_index, timer_start, timer_end)
     tasmota_set_power(relay_index, false)
 end
 
-check_timer_interval_between(1, t1, t2);
-#check_timer_interval_between(2, t3, t4);
+check_timer_interval_between(2, t1, t2);
+#check_timer_interval_between(1, t3, t4);
