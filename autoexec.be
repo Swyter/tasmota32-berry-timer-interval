@@ -1,3 +1,5 @@
+import string
+
 # created by swyter in december 2023
 # --
 # A tiny start-up Berry script for Tasmota32 that tries to convert a pair of two one-shot web UI timers
@@ -16,18 +18,18 @@ cur_time = tasmota.time_dump(tasmota.rtc()['local'])
 #      berry console when called within functions) as well as the berry console
 def tasmota_log(string)
     tasmota.log(string)
-    print(string)
+    #print(string)
 end
 
-def tasmota_set_power(relay_index, state)
+def tasmota_set_power(relay_index_first_is_zero, state)
     var state_string = state ? 'ON' : 'OFF'
-    if (tasmota.get_power(relay_index) != state)
-        tasmota_log(string.format("swy: [!!] powering %s (%u) relay index %u", state_string, state, relay_index))
+    if (tasmota.get_power(relay_index_first_is_zero) != state)
+        tasmota_log(string.format("swy: [!!] powering %s (%u) relay index %u", state_string, state, relay_index_first_is_zero))
         # swy: NOTE: this is what actually turns the physical outputs on (true)
         #            or off (false), comment out for stubbing/testing
-        #tasmota.set_power(relay_index, state)
+        tasmota.set_power(relay_index_first_is_zero, state)
     else
-        tasmota_log(string.format("swy: [!!] relay index %u is already %s (%u); nothing to do", relay_index, state_string, state))
+        tasmota_log(string.format("swy: [!!] relay index %u is already %s (%u); nothing to do", relay_index_first_is_zero, state_string, state))
     end
 end
 
@@ -76,6 +78,8 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
         return
     end
 
+    # --
+
     # swy: convert the provided e.g. '07:00' string into two 7 and 0 numbers:
     var timer_start_num = string.split(timer_start['Time'], ":")
     var timer_end_num   = string.split(timer_end  ['Time'], ":")
@@ -96,7 +100,8 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
           timer_end['Days'][cur_time['weekday'] % 6] == '1')
           tasmota_log(string.format("swy: current week day (%u) is an active day", cur_time['weekday']))
 
-        if (((ht_start['hour'] * 60) + ht_start['min']) >= ((ht_end  ['hour'] * 60) + ht_end  ['min']))
+        if (((ht_start['hour'] * 60) + ht_start['min']) >=
+            ((ht_end  ['hour'] * 60) + ht_end  ['min']))
             tasmota_log("swy: the start timer must trigger earlier than the end timer; bailing out")
             return
         end
@@ -138,3 +143,4 @@ end
 # swy: set which timers check which relay output
 check_timer_interval_between(2, t1, t2);
 #check_timer_interval_between(1, t3, t4);
+#check_timer_interval_between(3, t5, t6);
