@@ -33,8 +33,9 @@ end
 
 # swy: keep in mind that for all the legacy tasmota commands everything starts at index one, where as for
 #       the berry stuff the first index is always zero, so we need to convert between them; good job!
-def check_timer_interval_between(relay_timer_number_first_is_one, timer_start, timer_end)
-    # swy: ignore inactive timers; as well as all a whole hosts of fail-safe sanity checks before doing anything
+def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_start, timer_end)
+    # swy: check and ignore inactive timers; as well as a whole host of
+    #      fail-safe sanity checks before doing anything
     if (timer_start['Enable'] != 1 ||
         timer_end  ['Enable'] != 1)
         tasmota_log("swy: some of the timers in the interval seem to be disabled; bailing out")
@@ -46,12 +47,17 @@ def check_timer_interval_between(relay_timer_number_first_is_one, timer_start, t
         return
     end
 
-    if (timer_start['Output'] != relay_timer_number_first_is_one)
-        tasmota_log(string.format("swy: the relay the timer pair controls (%u) must match the one provided as parameter (%u); bailing out", timer_start['Output'], relay_timer_number_first_is_one))
+    if (timer_start['Output'] != relay_timer_output_number_first_is_one)
+        tasmota_log(
+            string.format(
+                "swy: the relay the timer pair controls (%u) must match the one provided as the first parameter (%u); bailing out",
+                timer_start['Output'], relay_timer_output_number_first_is_one
+            )
+        )
         return
     end
 
-    # swy: make sure the mode is set to 'Time' (0), instead of Sunrise (1) or Sunset (2)
+    # swy: make sure the mode is set to 'Time' (0), instead of 'Sunrise' (1) or 'Sunset' (2); as those don't use a fixed timestamp
     if (timer_start['Mode'  ] != 0 || timer_end['Mode'  ] != 0)
         tasmota_log("swy: the timer pair must not be in sunrise/sunset mode; bailing out")
         return
@@ -73,6 +79,12 @@ def check_timer_interval_between(relay_timer_number_first_is_one, timer_start, t
     # swy: convert the provided e.g. '07:00' string into two 7 and 0 numbers:
     var timer_start_num = string.split(timer_start['Time'], ":")
     var timer_end_num   = string.split(timer_end  ['Time'], ":")
+
+    # swy: make sure we actually have the right time format
+    if (timer_start_num.size() != 2 || timer_end_num.size() != 2)
+        tasmota_log("swy: the returned timestamps don't seem to contain a HH:MM string; bailing out")
+        return
+    end
 
     var ht_start = {'hour': number(timer_start_num[0]), 'min': number(timer_start_num[1])}
     var ht_end   = {'hour': number(timer_end_num  [0]), 'min': number(timer_end_num  [1])}
@@ -103,7 +115,7 @@ def check_timer_interval_between(relay_timer_number_first_is_one, timer_start, t
                     )
                 )
                 # swy: we're inside the working interval; it should be on
-                tasmota_set_power((relay_timer_number_first_is_one - 1), true)
+                tasmota_set_power((relay_timer_output_number_first_is_one - 1), true)
                 return
             end
         end
@@ -120,8 +132,9 @@ def check_timer_interval_between(relay_timer_number_first_is_one, timer_start, t
     end
 
     # swy: outside the valid interval; shut it down
-    tasmota_set_power((relay_timer_number_first_is_one - 1), false)
+    tasmota_set_power((relay_timer_output_number_first_is_one - 1), false)
 end
 
+# swy: set which timers check which relay output
 check_timer_interval_between(2, t1, t2);
 #check_timer_interval_between(1, t3, t4);
