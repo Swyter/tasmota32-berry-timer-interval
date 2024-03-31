@@ -6,13 +6,7 @@ import string
 # into a single interval/activation range. Useful for safely turning off a relay/output when power
 # comes back after a brownout and one of the triggers did not fire. 
 
-t1 = tasmota.cmd('timer1')['Timer1']
-t2 = tasmota.cmd('timer2')['Timer2']
-
-t3 = tasmota.cmd('timer3')['Timer3']
-t4 = tasmota.cmd('timer4')['Timer4']
-
-cur_time = tasmota.time_dump(tasmota.rtc()['local'])
+tasmota_log("swy: [>>] starting up the interval timer activation script...")
 
 # swy: log both to the persistent tasmota log (which does not output anything on the
 #      berry console when called within functions) as well as the berry console
@@ -36,6 +30,10 @@ end
 # swy: keep in mind that for all the legacy tasmota commands everything starts at index one, where as for
 #       the berry stuff the first index is always zero, so we need to convert between them; good job!
 def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_start, timer_end)
+    # swy: make sure our time is up to date; if launching straight from the autoexec.be main
+    #      context it may be too early, and we'd get 00:00 and garbage logic
+    var cur_time = tasmota.time_dump(tasmota.rtc()['local'])
+
     # swy: check and ignore inactive timers; as well as a whole host of
     #      fail-safe sanity checks before doing anything
     if (timer_start['Enable'] != 1 ||
@@ -140,7 +138,23 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
     tasmota_set_power((relay_timer_output_number_first_is_one - 1), false)
 end
 
-# swy: set which timers check which relay output
-check_timer_interval_between(2, t1, t2);
-#check_timer_interval_between(1, t3, t4);
-#check_timer_interval_between(3, t5, t6);
+
+def schedule_check()
+    var t1 = tasmota.cmd('timer1')['Timer1']
+    var t2 = tasmota.cmd('timer2')['Timer2']
+
+    var t3 = tasmota.cmd('timer3')['Timer3']
+    var t4 = tasmota.cmd('timer4')['Timer4']
+
+    tasmota_log("swy: [**] checking interval timers...")
+
+    # swy: set which timers check which relay output
+    check_timer_interval_between(2, t1, t2);
+    #check_timer_interval_between(1, t3, t4);
+    #check_timer_interval_between(3, t5, t6);
+end
+
+# swy: wait ~10 seconds from device startup before checking, for Tasmota to get the current NTP time loaded (otherwise we'd get 00:00)
+tasmota.set_timer(10 * 1000, schedule_check)
+# swy: plus, add a recurrent task to check every X minutes
+tasmota.add_cron("*/15 * * * *", schedule_check, "every_15_min")
