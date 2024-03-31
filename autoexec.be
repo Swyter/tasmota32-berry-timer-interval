@@ -111,7 +111,7 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
                 ((ht_end  ['hour'] * 60) + ht_end  ['min']))  #      it's outside the range by then, use < instead of <=.
                 tasmota_log(
                     string.format(
-                        "swy: current time (%02u:%02u) is inside the valid interval (from %02u:%02u to %02u:%02u)",
+                        "swy: current time (%02u:%02u) is inside the valid interval (from %02u:%02u to just before %02u:%02u)",
                         cur_time['hour'], cur_time['min'],
                         ht_start['hour'], ht_start['min'],
                         ht_end  ['hour'], ht_end  ['min']
@@ -124,7 +124,7 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
         end
 
         tasmota_log(
-            string.format("swy: current time (%02u:%02u) seems to fall OUTSIDE the valid interval (from %02u:%02u to %02u:%02u)",
+            string.format("swy: current time (%02u:%02u) seems to fall OUTSIDE the valid interval (from %02u:%02u to just before %02u:%02u)",
                 cur_time['hour'], cur_time['min'],
                 ht_start['hour'], ht_start['min'],
                 ht_end  ['hour'], ht_end  ['min']
