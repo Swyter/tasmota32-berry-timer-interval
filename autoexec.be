@@ -6,14 +6,14 @@ import string
 # into a single interval/activation range. Useful for safely turning off a relay/output when power
 # comes back after a brownout and one of the triggers did not fire. 
 
-tasmota_log("swy: [>>] starting up the interval timer activation script...")
-
 # swy: log both to the persistent tasmota log (which does not output anything on the
 #      berry console when called within functions) as well as the berry console
 def tasmota_log(string)
     tasmota.log(string)
     #print(string)
 end
+
+tasmota_log("swy: [>>] starting up the interval timer activation script...")
 
 def tasmota_set_power(relay_index_first_is_zero, state)
     var state_string = state ? 'ON' : 'OFF'
@@ -157,4 +157,4 @@ end
 # swy: wait ~10 seconds from device startup before checking, for Tasmota to get the current NTP time loaded (otherwise we'd get 00:00)
 tasmota.set_timer(10 * 1000, schedule_check)
 # swy: plus, add a recurrent task to check every X minutes
-tasmota.add_cron("*/15 * * * *", schedule_check, "every_15_min")
+tasmota.add_cron("10 */15 * * * *", schedule_check, "every_15_min")
