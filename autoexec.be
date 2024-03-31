@@ -107,8 +107,8 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
         if (((cur_time['hour'] * 60) + cur_time['min']) >= # swy: convert to minutes for an easier comparison
             ((ht_start['hour'] * 60) + ht_start['min']))
     
-            if (((cur_time['hour'] * 60) + cur_time['min']) <= # swy: same
-                ((ht_end  ['hour'] * 60) + ht_end  ['min']))
+            if (((cur_time['hour'] * 60) + cur_time['min']) < # swy: same, but make sure we leave out the minute where we toggle it off,
+                ((ht_end  ['hour'] * 60) + ht_end  ['min']))  #      it's outside the range by then, use < instead of <=.
                 tasmota_log(
                     string.format(
                         "swy: current time (%02u:%02u) is inside the valid interval (from %02u:%02u to %02u:%02u)",
