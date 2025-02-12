@@ -166,7 +166,7 @@ def schedule_check()
     #check_timer_interval_between(3, t5, t6);
 end
 
-# swy: wait ~50 seconds from device startup before checking, for Tasmota to get the current NTP time loaded (otherwise we'd get 00:00)
-tasmota.set_timer(50 * 1000, schedule_check)
+# swy: wait ~10 seconds from device startup before checking, for Tasmota to get the current NTP time loaded (otherwise we'd get 00:00)
+tasmota.set_timer(10 * 1000, schedule_check)
 # swy: plus, add a recurrent task to check every X minutes
-tasmota.add_cron("10 */15 * * * *", schedule_check, "every_15_min")
+tasmota.add_cron("10 */1 * * * *", schedule_check, "every_1_min")
