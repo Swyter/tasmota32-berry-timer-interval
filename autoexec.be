@@ -1,6 +1,6 @@
 import string
 
-# created by swyter in december 2023
+# created by swyter in december 2023, updated in february 2025
 # --
 # A tiny start-up Berry script for Tasmota32 that tries to convert a pair of two one-shot web UI timers
 # into a single interval/activation range. Useful for safely turning off a relay/output when power
@@ -17,7 +17,7 @@ end
 #      we're connected to Wi-Fi, and can retrieve the right one via NTP from the Internet.
 #      --
 #      this usually takes a minute, from experience, and until then Tasmota timers firing at 12 PM will be wrong!
-tasmota_log("swy: [>>] starting up the interval timer activation script...")
+tasmota_log("swy: [>>] starting up the interval timer activation script... v2025.02.12")
 
 def tasmota_set_power(relay_index_first_is_zero, state)
     var state_string = state ? 'ON' : 'OFF'
@@ -38,8 +38,11 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
     #      context it may be too early, and we'd get 00:00 and garbage logic
     var cur_time = tasmota.time_dump(tasmota.rtc()['local'])
 
-    if (cur_time['year'] < 2000)
-        tasmota_log("swy: seems like the time and date has not been set from NTP; no Internet yet? bailing out")
+    if (cur_time['year'] < 2000) # swy: this will be set to 1970 after a reboot without Internet, don't act and ignore anything unsafe
+        tasmota_log("swy: seems like the time and date has not been set yet from NTP; still no Internet? powering off just in case, and bailing out")
+
+        # swy: we don't know for sure whether we're outside the valid interval; shut it down
+        tasmota_set_power((relay_timer_output_number_first_is_one - 1), false)
         return
     end
 
