@@ -13,6 +13,10 @@ def tasmota_log(string)
     #print(string)
 end
 
+# swy: at this point tasmota.rtc starts from zero and local time/date is 1970-01-01 00:00, until
+#      we're connected to Wi-Fi, and can retrieve the right one via NTP from the Internet.
+#      --
+#      this usually takes a minute, from experience, and until then Tasmota timers firing at 12 PM will be wrong!
 tasmota_log("swy: [>>] starting up the interval timer activation script...")
 
 def tasmota_set_power(relay_index_first_is_zero, state)
@@ -33,6 +37,11 @@ def check_timer_interval_between(relay_timer_output_number_first_is_one, timer_s
     # swy: make sure our time is up to date; if launching straight from the autoexec.be main
     #      context it may be too early, and we'd get 00:00 and garbage logic
     var cur_time = tasmota.time_dump(tasmota.rtc()['local'])
+
+    if (cur_time['year'] < 2000)
+        tasmota_log("swy: seems like the time and date has not been set from NTP; no Internet yet? bailing out")
+        return
+    end
 
     # swy: check and ignore inactive timers; as well as a whole host of
     #      fail-safe sanity checks before doing anything
